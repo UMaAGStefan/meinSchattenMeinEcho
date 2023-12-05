@@ -26,6 +26,4 @@ gdf_srVB, gdf_srZB, gdf_srGB = shadow.shadowFlicker(gdf_wea,gdf_sr,outfile)
 # # # # # # NOISE # # # # # # #
 df_io = noise.calcAndEvaluateNoise(df_wea,df_io,outfile)
 
-print('done')
-
-
+print(df_io)
