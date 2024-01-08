@@ -223,9 +223,6 @@ def ExtraRundeSchallModes(df_wea,df_io,fileName):
     if possibleCombinations>max_iterations:
         print('Iterationen reduziert')
         print(f"Länge des Produkts: {possibleCombinations}")
-    print('geschätze Dauer ' + str(round(possibleCombinations*0.000987886)) + ' s')
-    print('geschätze Dauer ' + str(round(possibleCombinations*0.000987886/60,1)) + ' min')
-    print('geschätze Dauer ' + str(round(possibleCombinations*0.000987886/60/60,1)) + ' h')
 
     for i, combination in enumerate(product(*[df_io_allModes[df_io_allModes.index.str.startswith(prefix)].index for prefix in prefixes])):
 
@@ -236,7 +233,7 @@ def ExtraRundeSchallModes(df_wea,df_io,fileName):
         df_io.loc[:, 'Bewertung'] = 0
         df_io.loc[combi_GB-0.45<df_io['IRW Calc'].values,'Bewertung']=1
         #df_io.loc[(combi_GB-1.45<df_io['IRW'].values)&(df_io['VB'].values-1.45>df_io['IRW'].values),'Bewertung']=1
-        #df_io.loc[(df_io_allModes.loc[list(combination)]-df_io['IRW'].values+10>0).all(axis='rows'),'Bewertung']=1
+        df_io.loc[(df_io_allModes.loc[list(combination)]-df_io['IRW'].values+10>0).all(axis='rows'),'Bewertung']=1
         if all(df_io['Bewertung']!=0):
             if data1.loc[list(combination),'kW'].sum()>bestCombinations.loc['kW'].min():
                 bestCombinations.loc[:len(df_wea)-1,bestCombinations.loc['kW'].idxmin()] = combination
@@ -244,9 +241,9 @@ def ExtraRundeSchallModes(df_wea,df_io,fileName):
         # Überprüfe, ob die maximale Anzahl von Iterationen erreicht ist
         if i + 1 == max_iterations:
             break
-        if i%1000==0:
-            print("Fortschritt: {:.1f}%".format(i/possibleCombinations*100))
-
+        if i%1000==0 and i>0:
+            print("Fortschritt: {:.1f}% ".format(i/possibleCombinations*100)+
+                  "verbleibende Dauer: {:.1f}s".format((time.time() - start_time)/(i/possibleCombinations)-(time.time() - start_time)))
     print(i)
     print("--- %s seconds for ---" % (time.time() - start_time))
     print(bestCombinations)
