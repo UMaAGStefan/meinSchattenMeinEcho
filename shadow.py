@@ -5,6 +5,9 @@ import time
 import pandas as pd
 import geopandas
 import os
+
+
+
 # Es noch zu ergänzen Prüfen
 # - Anpassung auf Fläche und nicht nur Punkt als SR
 # - Ergebniss
@@ -18,7 +21,7 @@ def shadowAssessement(gdf_wea, gdf_sr):
     sunDiameter = 1392680000
     sunAlpha = np.degrees(np.arctan((sunDiameter/sunDistance)))
     siteName = 'Default'
-    # # "...\Normen Richtlinien\Schall\c6-UK_WindPRO3.6-Environment.pdf"
+    # # "...\Normen Richtlinien\Schall\shadowRangeCalculation.pdf"
     #gdf_wea.loc[:,'Beschattungsbereich']=((5*sunDistance*gdf_wea.loc[:,'BladeWidthAvg']/1097780000)**2-gdf_wea.loc[:,'Hub height']**2)**(1/2)
     #gdf_wea['Z']=determineStandardParameter.getZValue(gdf_wea)
     #gdf_sr['Z']=determineStandardParameter.getZValue(gdf_sr)
@@ -187,7 +190,7 @@ def shadowAssessement(gdf_wea, gdf_sr):
     print(gdf_sr.loc[:,'Schattentag/Jahr [d]'])
     print(gdf_sr.loc[:,'Schattenstunden/Jahr [h]'])
     print(gdf_sr.loc[:, 'Schattenstunden/Jahr [h:m]'])
-    #gdf_sr.to_excel(r'c:\Users\sb.umaag\OneDrive - Umwelt Management AG UMaAG\Dokumente\GitHub\werkstatt\shadow_out.xlsx')
+    #gdf_sr.to_excel(r'shadow_out.xlsx')
     print("--- %s seconds to calc all---" % (time.time() - start_time_all))
     # https://help.emd.dk/mediawiki/index.php/Schattenreichweite_Hintergrund
 
@@ -203,7 +206,7 @@ def shadowAssessement(gdf_wea, gdf_sr):
 
 def shadowFlicker(gdf_wea,gdf_sr,outfile):
     # # Windturbine Data
-    #WTGDataPath = r'c:\Users\sb.umaag\OneDrive - Umwelt Management AG UMaAG\Dokumente\WindPRO Data\Projects\BWE Ringversuch\2023 Schall und Schattenringversuch\WTGData'
+    #WTGDataPath = r'WTGDATAIMPORT??????'
     # # # # # # SHADOW # # # # # # #
     gdf_wea.loc[:, 'BladeWidthAvg'] = 1 / 2 * (gdf_wea.loc[:, 'BladeWidthMax'] + gdf_wea.loc[:, 'BladeWidthat90%R'])
     sunDistance = 149597870000
@@ -215,7 +218,11 @@ def shadowFlicker(gdf_wea,gdf_sr,outfile):
 
     gdf_sr.loc[:,:'geometry']
     gdf_srGB = shadowAssessement(gdf_wea[(gdf_wea['Object type'] == 'Neue WEA') | (gdf_wea['Object type'] == 'Existierende WEA')], gdf_sr.loc[:,:'geometry'])
-    gdf_srVB = shadowAssessement(gdf_wea[gdf_wea['Object type'] == 'Existierende WEA'], gdf_sr.loc[:,:'geometry'])
+    if gdf_wea[gdf_wea['Object type'] == 'Existierende WEA'].empty:
+        gdf_srVB = pd.DataFrame()
+    else:
+       gdf_srVB = shadowAssessement(gdf_wea[gdf_wea['Object type'] == 'Existierende WEA'], gdf_sr.loc[:,:'geometry'])
+
     gdf_srZB = shadowAssessement(gdf_wea[gdf_wea['Object type'] == 'Neue WEA'], gdf_sr.loc[:,:'geometry'])
     # ExcelWriter
     gdf_wea.name = 'Windkraftanlage'
