@@ -5,6 +5,8 @@ import time
 def calcVBZB(df_wea,df_io,ind):
     """
     Berechnung der Schallpegel der WEA an dem IO
+    Berechnung erfolgt nach Interimsverfahren oder bei Schallquellen kleiner 60m nach dem Alternativen Verfahren
+    (Hinweise zum Schallimmissionsschutz bei Windkraftanlagen (WKA) Stand 30.06.2016)
     """
     df_calcs = pd.DataFrame(columns=['ZB', 'VB', 'L WEA', 'D', 'A', 'Adiv', 'Aatm', 'Agr', 'Abar', 'Cmet','Dc'])
     df_calcs['D']=(((df_wea.loc[:,'Ost ']-df_io.loc[ind,'Ost '])**2+
@@ -20,8 +22,8 @@ def calcVBZB(df_wea,df_io,ind):
     df_calcs['Dc'] = 0.0
     df_calcs['Abar'] = 0
     df_calcs['Cmet'] = 0
-    # Alternatives Verfahren für alle WEA mit NH kleiner 30m
-    for wea_ind in df_wea[df_wea['Hub height']<=50].index:
+    # Alternatives Verfahren für alle WEA mit NH kleiner 60m  annahme mittlerer Schallweg über Grund 30m ohne Orographie
+    for wea_ind in df_wea[df_wea['Hub height']<=60].index:
         df_calcs.loc[wea_ind,'Aatm'] = df_wea.loc[wea_ind,'LatDW'] - \
                                        10*np.log10(10**((df_wea.loc[wea_ind,'LatDW']-
                                                          (1.9*df_calcs.loc[wea_ind,'D']/1000))/10))
@@ -47,7 +49,7 @@ def calcVBZB(df_wea,df_io,ind):
     return WeaVB, GewVB,\
            ZB,\
             df_calcs# VB,ZB
-#where=prob>0
+
 
 def calcAndEvaluateNoise(df_wea,df_io,outfile=None,SchwellenwertEinwirkbereich=10,
                          zulaessigeUeberschreitungBeiVB=1):
@@ -71,15 +73,13 @@ def calcAndEvaluateNoise(df_wea,df_io,outfile=None,SchwellenwertEinwirkbereich=1
     for ind_io in df_io.index:
         df_io.loc[ind_io, 'WeaVB'],df_io.loc[ind_io, 'GewVB'], df_io.loc[ind_io, 'ZB'], df_calcs = calcVBZB(df_wea, df_io, ind_io)
         df_io.loc[ind_io, 'VB'] = 10 * np.log10((10 ** (df_io.loc[ind_io, ['WeaVB', 'GewVB']] / 10)).sum().astype(float))
-
         df_io.loc[ind_io, 'GB'] = 10 * np.log10((10 ** (df_io.loc[ind_io, ['VB', 'ZB']] / 10)).sum().astype(float))
-
         # Bewertung
         if round(df_io.loc[ind_io, 'ZB']) <= df_io.loc[ind_io, 'IRW']-SchwellenwertEinwirkbereich:
             df_io.loc[ind_io, 'Bewertung'] = 'Einwirkbereich'
         elif round(df_io.loc[ind_io, 'GB']) <= df_io.loc[ind_io, 'IRW']:
             df_io.loc[ind_io, 'Bewertung'] = 'GB kleiner IRW'
-        elif round(df_io.loc[ind_io, 'GB'] - zulaessigeUeberschreitungBeiVB) <= df_io.loc[ind_io, 'IRW'] and round(df_io.loc[ind_io, 'VB'] + SchwellenwertEinwirkbereich) > df_io.loc[ind_io, 'IRW']:
+        elif round(df_io.loc[ind_io, 'GB'] - zulaessigeUeberschreitungBeiVB) <= df_io.loc[ind_io, 'IRW'] and round(df_io.loc[ind_io, 'VB'] + SchwellenwertEinwirkbereich) >= df_io.loc[ind_io, 'IRW']:
             df_io.loc[ind_io, 'Bewertung'] = 'GB 1dB über IRW'
         elif all(round(df_calcs.loc[df_calcs['Object type'] == 'Neue WEA', 'L WEA']) <= df_io.loc[ind_io, 'IRW']-SchwellenwertEinwirkbereich):
             df_io.loc[ind_io, 'Bewertung'] = f'Einzelbeitrag {SchwellenwertEinwirkbereich}dB unter IRW'
@@ -107,9 +107,9 @@ def calcAndEvaluateNoise(df_wea,df_io,outfile=None,SchwellenwertEinwirkbereich=1
 def schallKonzeptFortePiano(df_wea,df_io, fileName):
     """
     Die Lauteste Anlage wird reduziert bis die Bewertung in Ordnung ist.
-
     """
     print('Starte Schallkonzept FortePiano')
+    start_time_FP = time.time()
     df_inp = pd.read_excel(fileName, sheet_name='WEASchallDaten', header=None, index_col=0)
     # Füllen mit Oktavband Daten mit maximal möglichen Schallmode
     for ind in df_wea[df_wea['NachtBetrieb'].isnull()].index:
@@ -130,6 +130,7 @@ def schallKonzeptFortePiano(df_wea,df_io, fileName):
         df_modes = df_inp.iloc[start_index:aus_index]
         mode_index = df_modes.index.get_loc(df_wea.loc[wea_ind, 'NachtBetrieb'])
         if mode_index < aus_index - 1:
+            print(mode_index)
             # Lauteste Anlage ein Mode leiser
             df_wea.loc[wea_ind, 'NachtBetrieb'] = df_modes.iloc[mode_index + 1].name
             df_wea.loc[wea_ind, 63:'deltaL'] = df_modes.iloc[mode_index + 1, :10].values
@@ -184,12 +185,14 @@ def schallKonzeptFortePiano(df_wea,df_io, fileName):
             df_wea.loc[wea_ind, 'NB kW'] = 0
         df_io = calcAndEvaluateNoise(df_wea, df_io, outfile=None)
         df_io['Abstand ZB IRW'] = df_io['ZB'] - df_io['IRW']
+    print("--- %s seconds for Noise FortePiano ---" % (time.time() - start_time_FP))
     print(df_wea.loc[:, 'NachtBetrieb'])
     return df_io, df_wea
 
 def ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,SchwellenwertEinwirkbereich=10,
                          zulaessigeUeberschreitungBeiVB=1):
     print('ExtraRundeSchallVariation')
+    start_time = time.time()
     # # ExtraRundeSchallModes
     # Alle Möglichen Varianten mit +/-1 Mode werden bestimmt
     df_inp = pd.read_excel(fileName, sheet_name='WEASchallDaten', header=None, index_col=0)
@@ -233,12 +236,12 @@ def ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,SchwellenwertEinwirkbere
     df_io.loc[:,'VB'] = 10 * np.log10((10 ** (df_io.loc[:,['WeaVB', 'GewVB']] / 10)).sum(axis=1).astype(float))
     # Anpassung IRW nach Bewertung wenn +1 dB Möglich bei ausreichender Vorbelastung
     df_io.loc[:, 'IRW Calc'] = df_io.loc[:,'IRW']
-    if not df_io[round(df_io.loc[:,'VB'])>df_io.loc[:,'IRW']-SchwellenwertEinwirkbereich].empty:
+    if not df_io[round(df_io.loc[:,'VB'])>=df_io.loc[:,'IRW']-SchwellenwertEinwirkbereich].empty:
         df_io.loc[round(df_io.loc[:,'VB'])>=df_io.loc[:,'IRW']-SchwellenwertEinwirkbereich,'IRW Calc']=\
             df_io.loc[round(df_io.loc[:,'VB'])>=df_io.loc[:,'IRW']-SchwellenwertEinwirkbereich,'IRW']+zulaessigeUeberschreitungBeiVB
     df_io = df_io.set_index('User label')
     # possible combinations modes**wea
-    start_time = time.time()
+
     df_io_allModes_calcs = 10**(df_io_allModes/10)
     df_io_vb_calcs = 10**(df_io.loc[:,'VB']/10).values
 
@@ -266,12 +269,12 @@ def ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,SchwellenwertEinwirkbere
                 bestCombinations.iloc[len(bestCombinations)-1,bestCombinations.loc['kW'].idxmin()] = data1.loc[list(combination),'kW'].sum()
         # Überprüfe, ob die maximale Anzahl von Iterationen erreicht ist
         if i + 1 == max_iterations:
-            break
+            print('done')
         if i%1000==0 and i>0:
             print("Fortschritt: {:.1f}% ".format(i/possibleCombinations*100)+
                   "verbleibende Dauer: {:.1f}s".format((time.time() - start_time)/(i/possibleCombinations)-(time.time() - start_time)))
 
-    print("--- %s seconds for ---" % (time.time() - start_time))
+    print("--- %s seconds for ExtraRundeSchallVariation---" % (time.time() - start_time))
     print(bestCombinations)
     bestCombinations['WEA Label']=df_wea['User label']
     bestCombinations['WEA Label']['kW'] = 'kW'

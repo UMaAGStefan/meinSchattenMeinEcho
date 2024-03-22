@@ -7,7 +7,7 @@ import noise
 
 def main():
     # EINGABE der Eingangsdatei
-    fileName = r"example\yyyymmdd_EINGANG_meinSchattenMeinEcho_Projekt.xlsx"
+    fileName = r"example\240322_EINGANG_meinSchattenMeinEcho_Example.xlsx"
     # EINGABE des Verwendeten Koordinatensystems
     crsInp = 'EPSG:25832'
     #df_wea = pd.read_excel(fileName,sheet_name='WEA',usecols=['User label', 'Object type', 'Ost ', 'Nord ', 'Z', 'Object description','Hub height', 'NachtBetrieb'])
