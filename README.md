@@ -46,7 +46,7 @@ und die Kombinationen mit der höchsten Nennlast ausgeben lassen ("ExtraRundeSch
 
 ## Verwendung
 **Schritt 1:** Vorbereiten der Eingangsdaten in Excel
-- Beispiel Excel als Eingangsdatei gibts auf Anfrage
+- Beispiel Excel als Eingangsdatei gibts auf Anfrage oder als .pfd Export und dem Ordner Example
 
 **Schritt 2:** Ausführung des Python scripts main.py - Ausgabe Datei wird erzeugt.
 
