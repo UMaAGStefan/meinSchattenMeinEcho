@@ -75,13 +75,13 @@ def calcAndEvaluateNoise(df_wea,df_io,outfile=None,SchwellenwertEinwirkbereich=1
         df_io.loc[ind_io, 'VB'] = 10 * np.log10((10 ** (df_io.loc[ind_io, ['WeaVB', 'GewVB']] / 10)).sum().astype(float))
         df_io.loc[ind_io, 'GB'] = 10 * np.log10((10 ** (df_io.loc[ind_io, ['VB', 'ZB']] / 10)).sum().astype(float))
         # Bewertung
-        if round(df_io.loc[ind_io, 'ZB']) <= df_io.loc[ind_io, 'IRW']-SchwellenwertEinwirkbereich:
+        if df_io.loc[ind_io, 'ZB'] <= df_io.loc[ind_io, 'IRW']-SchwellenwertEinwirkbereich:
             df_io.loc[ind_io, 'Bewertung'] = 'Einwirkbereich'
         elif round(df_io.loc[ind_io, 'GB']) <= df_io.loc[ind_io, 'IRW']:
             df_io.loc[ind_io, 'Bewertung'] = 'GB kleiner IRW'
         elif round(df_io.loc[ind_io, 'GB'] - zulaessigeUeberschreitungBeiVB) <= df_io.loc[ind_io, 'IRW'] and round(df_io.loc[ind_io, 'VB'] + SchwellenwertEinwirkbereich) >= df_io.loc[ind_io, 'IRW']:
             df_io.loc[ind_io, 'Bewertung'] = 'GB 1dB über IRW'
-        elif all(round(df_calcs.loc[df_calcs['Object type'] == 'Neue WEA', 'L WEA']) <= df_io.loc[ind_io, 'IRW']-SchwellenwertEinwirkbereich):
+        elif all(df_calcs.loc[df_calcs['Object type'] == 'Neue WEA', 'L WEA'] <= df_io.loc[ind_io, 'IRW']-SchwellenwertEinwirkbereich):
             df_io.loc[ind_io, 'Bewertung'] = f'Einzelbeitrag {SchwellenwertEinwirkbereich}dB unter IRW'
         else:
             df_io.loc[ind_io, 'Bewertung'] = 'Nicht ok'
@@ -130,7 +130,7 @@ def schallKonzeptFortePiano(df_wea,df_io, fileName):
         df_modes = df_inp.iloc[start_index:aus_index]
         mode_index = df_modes.index.get_loc(df_wea.loc[wea_ind, 'NachtBetrieb'])
         if mode_index < aus_index - 1:
-            print(mode_index)
+            print(f'WEA{wea_ind} {df_modes.iloc[mode_index + 1].name}')
             # Lauteste Anlage ein Mode leiser
             df_wea.loc[wea_ind, 'NachtBetrieb'] = df_modes.iloc[mode_index + 1].name
             df_wea.loc[wea_ind, 63:'deltaL'] = df_modes.iloc[mode_index + 1, :10].values
