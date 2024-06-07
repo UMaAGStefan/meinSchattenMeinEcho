@@ -51,11 +51,11 @@ def calcVBZB(df_wea,df_io,ind):
             df_calcs# VB,ZB
 
 
-def calcAndEvaluateNoise(df_wea,df_io,outfile=None,SchwellenwertEinwirkbereich=10,
+def calcAndEvaluateNoise(df_wea,df_io,outfile=None,IrrelevanzZusatzbelstung=6,EinwirkbereichEinzelbeitrag=12,
                          zulaessigeUeberschreitungBeiVB=1):
     """
     Bewertung des Berechneten Pegel am den IOs
-    :param SchwellenwertEinwirkbereich: Definition des Abstand zwische IRW und Pegel am IO der noch als
+    :param EinwirkbereichEinzelbeitrag: Definition des Abstand zwische IRW und Pegel am IO der noch als
         Beitrag berücksichtig wird.
     :param zulaessigeUeberschreitungBeiVB: Definition der zulässigen Überschreitung wenn ein Vorbelastung vorhanden ist
     :return:
@@ -75,14 +75,14 @@ def calcAndEvaluateNoise(df_wea,df_io,outfile=None,SchwellenwertEinwirkbereich=1
         df_io.loc[ind_io, 'VB'] = 10 * np.log10((10 ** (df_io.loc[ind_io, ['WeaVB', 'GewVB']] / 10)).sum().astype(float))
         df_io.loc[ind_io, 'GB'] = 10 * np.log10((10 ** (df_io.loc[ind_io, ['VB', 'ZB']] / 10)).sum().astype(float))
         # Bewertung
-        if df_io.loc[ind_io, 'ZB'] <= df_io.loc[ind_io, 'IRW']-SchwellenwertEinwirkbereich:
-            df_io.loc[ind_io, 'Bewertung'] = 'Einwirkbereich'
+        if df_io.loc[ind_io, 'ZB'] <= df_io.loc[ind_io, 'IRW']-IrrelevanzZusatzbelstung:
+            df_io.loc[ind_io, 'Bewertung'] = 'Einwirkbereich Zusatzbelastung  ' + str(IrrelevanzZusatzbelstung) + 'dB unter IRW'
         elif round(df_io.loc[ind_io, 'GB']) <= df_io.loc[ind_io, 'IRW']:
             df_io.loc[ind_io, 'Bewertung'] = 'GB kleiner IRW'
-        elif round(df_io.loc[ind_io, 'GB'] - zulaessigeUeberschreitungBeiVB) <= df_io.loc[ind_io, 'IRW'] and round(df_io.loc[ind_io, 'VB'] + SchwellenwertEinwirkbereich) >= df_io.loc[ind_io, 'IRW']:
-            df_io.loc[ind_io, 'Bewertung'] = 'GB 1dB über IRW'
-        elif all(df_calcs.loc[df_calcs['Object type'] == 'Neue WEA', 'L WEA'] <= df_io.loc[ind_io, 'IRW']-SchwellenwertEinwirkbereich):
-            df_io.loc[ind_io, 'Bewertung'] = f'Einzelbeitrag {SchwellenwertEinwirkbereich}dB unter IRW'
+        elif round(df_io.loc[ind_io, 'GB'] - zulaessigeUeberschreitungBeiVB) <= df_io.loc[ind_io, 'IRW'] and round(df_io.loc[ind_io, 'VB'] + EinwirkbereichEinzelbeitrag) >= df_io.loc[ind_io, 'IRW']:
+            df_io.loc[ind_io, 'Bewertung'] = 'GB '+str(zulaessigeUeberschreitungBeiVB)+'dB über IRW'
+        elif all(df_calcs.loc[df_calcs['Object type'] == 'Neue WEA', 'L WEA'] <= df_io.loc[ind_io, 'IRW']-EinwirkbereichEinzelbeitrag):
+            df_io.loc[ind_io, 'Bewertung'] = f'Einzelbeitrag {EinwirkbereichEinzelbeitrag}dB unter IRW'
         else:
             df_io.loc[ind_io, 'Bewertung'] = 'Nicht ok'
     # Ergebnis
@@ -104,7 +104,8 @@ def calcAndEvaluateNoise(df_wea,df_io,outfile=None,SchwellenwertEinwirkbereich=1
                                  startrow=sheet.max_row)
     return df_io
 
-def schallKonzeptFortePiano(df_wea,df_io, fileName):
+def schallKonzeptFortePiano(df_wea,df_io, fileName,IrrelevanzZusatzbelstung=6,EinwirkbereichEinzelbeitrag=12,
+                         zulaessigeUeberschreitungBeiVB=1):
     """
     Die Lauteste Anlage wird reduziert bis die Bewertung in Ordnung ist.
     """
@@ -117,7 +118,10 @@ def schallKonzeptFortePiano(df_wea,df_io, fileName):
         df_wea.loc[ind, 'NachtBetrieb'] = df_inp.iloc[start_index + 1, :10].name
         df_wea.loc[ind, 63:'deltaL'] = df_inp.iloc[start_index + 1, :10].values
         df_wea.loc[ind, 'NB kW'] = df_inp.iloc[start_index + 1, -1]
-    df_io = calcAndEvaluateNoise(df_wea, df_io,outfile=None)
+    df_io = calcAndEvaluateNoise(df_wea, df_io,outfile=None,
+                                 IrrelevanzZusatzbelstung=IrrelevanzZusatzbelstung,
+                                 EinwirkbereichEinzelbeitrag=EinwirkbereichEinzelbeitrag,
+                                zulaessigeUeberschreitungBeiVB=zulaessigeUeberschreitungBeiVB)
     df_io['Abstand ZB IRW'] = df_io['ZB'] - df_io['IRW']
     # # Solange die Bewertung nicht ok ist wird eine Anlage reduziert, außer die Anlage ich bereits auf dem letzten Mode
     while any(df_io['Bewertung'] == 'Nicht ok'):
@@ -183,13 +187,17 @@ def schallKonzeptFortePiano(df_wea,df_io, fileName):
             df_wea.loc[wea_ind, 'NachtBetrieb'] = 'Aus'
             df_wea.loc[wea_ind, 63:'deltaL'] = 0
             df_wea.loc[wea_ind, 'NB kW'] = 0
-        df_io = calcAndEvaluateNoise(df_wea, df_io, outfile=None)
+        df_io = calcAndEvaluateNoise(df_wea, df_io, outfile=None,
+                                 IrrelevanzZusatzbelstung=IrrelevanzZusatzbelstung,
+                                 EinwirkbereichEinzelbeitrag=EinwirkbereichEinzelbeitrag,
+                                zulaessigeUeberschreitungBeiVB=zulaessigeUeberschreitungBeiVB)
         df_io['Abstand ZB IRW'] = df_io['ZB'] - df_io['IRW']
     print("--- %s seconds for Noise FortePiano ---" % (time.time() - start_time_FP))
     print(df_wea.loc[:, 'NachtBetrieb'])
+    print(df_io.loc[:, 'Bewertung'])
     return df_io, df_wea
 
-def ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,SchwellenwertEinwirkbereich=10,
+def ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,IrrelevanzZusatzbelstung=6,EinwirkbereichEinzelbeitrag=12,
                          zulaessigeUeberschreitungBeiVB=1):
     print('ExtraRundeSchallVariation')
     start_time = time.time()
@@ -215,8 +223,8 @@ def ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,SchwellenwertEinwirkbere
                                   df_modes.iloc[mode_index_start: mode_index_end].index):
             df_wea_allModes.loc[(df_wea.loc[wea_ind, 'User label'],ind_mode),:'Hub height']=df_wea.loc[wea_ind,:'Hub height']
             df_wea_allModes.loc[(df_wea.loc[wea_ind, 'User label'],ind_mode),'NachtBetrieb'] = ind_mode
-            df_wea_allModes.loc[(df_wea.loc[wea_ind, 'User label'],ind_mode),63:'deltaL'] = mode.astype(float)[:-1]
-            df_wea_allModes.loc[(df_wea.loc[wea_ind, 'User label'], ind_mode), 'kW'] = mode.astype(float)[-1]
+            df_wea_allModes.loc[(df_wea.loc[wea_ind, 'User label'],ind_mode),63:'deltaL'] = mode[:10].astype(float)
+            df_wea_allModes.loc[(df_wea.loc[wea_ind, 'User label'], ind_mode), 'kW'] = mode.astype(float)[10]
     data1 = pd.DataFrame(df_wea_allModes.values,
                          index=df_wea_allModes.index.map('_'.join),
                          columns=df_wea_allModes.columns)
@@ -236,9 +244,9 @@ def ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,SchwellenwertEinwirkbere
     df_io.loc[:,'VB'] = 10 * np.log10((10 ** (df_io.loc[:,['WeaVB', 'GewVB']] / 10)).sum(axis=1).astype(float))
     # Anpassung IRW nach Bewertung wenn +1 dB Möglich bei ausreichender Vorbelastung
     df_io.loc[:, 'IRW Calc'] = df_io.loc[:,'IRW']
-    if not df_io[round(df_io.loc[:,'VB'])>=df_io.loc[:,'IRW']-SchwellenwertEinwirkbereich].empty:
-        df_io.loc[round(df_io.loc[:,'VB'])>=df_io.loc[:,'IRW']-SchwellenwertEinwirkbereich,'IRW Calc']=\
-            df_io.loc[round(df_io.loc[:,'VB'])>=df_io.loc[:,'IRW']-SchwellenwertEinwirkbereich,'IRW']+zulaessigeUeberschreitungBeiVB
+    if not df_io[round(df_io.loc[:,'VB'])>=df_io.loc[:,'IRW']-EinwirkbereichEinzelbeitrag].empty:
+        df_io.loc[round(df_io.loc[:,'VB'])>=df_io.loc[:,'IRW']-EinwirkbereichEinzelbeitrag,'IRW Calc']=\
+            df_io.loc[round(df_io.loc[:,'VB'])>=df_io.loc[:,'IRW']-EinwirkbereichEinzelbeitrag,'IRW']+zulaessigeUeberschreitungBeiVB
     df_io = df_io.set_index('User label')
     # possible combinations modes**wea
 
@@ -261,8 +269,23 @@ def ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,SchwellenwertEinwirkbere
         combi_ZB = 10*np.log10((df_io_allModes_calcs.loc[list(combination)]).sum(axis=0).astype(float))
         combi_GB = 10*np.log10(df_io_vb_calcs+(10**(combi_ZB/10.0)).astype(float))
         df_io.loc[:, 'Bewertung'] = 0
-        df_io.loc[round(combi_GB)<=df_io['IRW Calc'].values,'Bewertung']=1
-        df_io.loc[(df_io_allModes.loc[list(combination)]-df_io['IRW'].values+SchwellenwertEinwirkbereich>=0).all(axis='rows'),'Bewertung']=1
+        # # # Irgendwie muss hier nochmal angepasst werden
+        # for io_ind in df_io.index:
+        #     if round(combi_GB.loc[io_ind])<=df_io.loc[io_ind,'IRW Calc']:
+        #         df_io.loc[io_ind,'Bewertung'] = 1
+        #     elif round(combi_ZB.loc[io_ind])<=(df_io.loc[io_ind,'IRW']-IrrelevanzZusatzbelstung):
+        #         df_io.loc[io_ind, 'Bewertung'] = 1
+        #     elif all(df_io_allModes.loc[list(combination),io_ind]-(df_io.loc[io_ind,'IRW']-EinwirkbereichEinzelbeitrag)>=0):
+        #         df_io.loc[io_ind, 'Bewertung'] = 1
+        # Prüfung Gesamtbelastung kleiner IRW, bei signifikanter Vorbelastung 1dB über IRW
+        df_io.loc[df_io['IRW Calc']-round(combi_GB)>=0,'Bewertung']=1
+        # df_io.loc[round(combi_GB)<=df_io['IRW Calc'].values,'Bewertung']=1
+        # Prüfung Irrelevanz Zusatzbelastung
+        df_io.loc[df_io['IRW']-IrrelevanzZusatzbelstung-round(combi_ZB)>=0,'Bewertung']=1
+        # df_io.loc[round(combi_ZB)<=(df_io['IRW'].values-IrrelevanzZusatzbelstung),'Bewertung']=1
+        # Prüfung Einwirkbereich Einzelbeitrag
+        df_io.loc[(df_io_allModes.loc[list(combination)]-(df_io['IRW'].values-EinwirkbereichEinzelbeitrag)>=0).all(axis='rows'),'Bewertung']=1
+        # df_io.loc[(df_io_allModes.loc[list(combination)]-df_io['IRW'].values+EinwirkbereichEinzelbeitrag>=0).all(axis='rows'),'Bewertung']=1
         if all(df_io['Bewertung']!=0):
             if data1.loc[list(combination),'kW'].sum()>bestCombinations.loc['kW'].min():
                 bestCombinations.iloc[:len(bestCombinations)-1,bestCombinations.loc['kW'].idxmin()] = combination
@@ -296,6 +319,7 @@ def ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,SchwellenwertEinwirkbere
                                  startrow=sheet.max_row)
     #combination=list(prefixes+df_wea['NachtBetrieb'])
     df_wea['NB kW'].sum()
-    df_wea.loc[df_wea['Object type'] == 'Neue WEA','NachtBetrieb':'deltaL'] = data1.loc[list(bestCombinations.loc[:,bestCombinations.loc['kW'].idxmax()])[:-1],'NachtBetrieb':'deltaL'].values
-    df_wea.loc[df_wea['Object type'] == 'Neue WEA','NB kW'] = data1.loc[list(bestCombinations.loc[:,bestCombinations.loc['kW'].idxmax()])[:-1],'kW'].values
+    df_wea.loc[df_wea['Object type'] == 'Neue WEA','NachtBetrieb':'deltaL'] = \
+        data1.loc[list(bestCombinations.loc[:,bestCombinations.loc['kW'].idxmax()])[:-1],'NachtBetrieb':'deltaL'].values
+    df_wea.loc[df_wea['Object type'] == 'Neue WEA','NB kW'] = data1.loc[list(bestCombinations.loc[:,bestCombinations.loc['kW'].idxmax()])[:-1],'kW'].values.astype(float)
     return df_wea

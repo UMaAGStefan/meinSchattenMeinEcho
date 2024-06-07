@@ -23,21 +23,34 @@ def main():
     gdf_wea.to_excel(outfile,index=None,sheet_name='WEA Eingangsdaten')
 
     # # # # # # SHADOW # # # # # # #
-    df_sr = pd.read_excel(fileName, sheet_name='Schatten')
-    gdf_sr = geopandas.GeoDataFrame(df_sr.drop(columns=['Ost ', 'Nord ']),
-                                    geometry=geopandas.points_from_xy(df_sr['Ost '], df_sr['Nord ']),
-                                    crs=crsInp)
-    gdf_srVB, gdf_srZB, gdf_srGB = shadow.shadowFlicker(gdf_wea,gdf_sr,outfile)
+    # df_sr = pd.read_excel(fileName, sheet_name='Schatten')
+    # gdf_sr = geopandas.GeoDataFrame(df_sr.drop(columns=['Ost ', 'Nord ']),
+    #                                 geometry=geopandas.points_from_xy(df_sr['Ost '], df_sr['Nord ']),
+    #                                 crs=crsInp)
+    # gdf_srVB, gdf_srZB, gdf_srGB = shadow.shadowFlicker(gdf_wea,gdf_sr,outfile)
     # # # # # # NOISE # # # # # # #
     # Einlesen der Schall IOs
     df_io = pd.read_excel(fileName, sheet_name='Schall',
                           usecols=['IRW', 'Description', 'Ost ', 'Nord ', 'Z', 'User label'])
     # Einfaches Schallkonzept - die Lauteste WEA wird reduziert
-    df_io, df_wea = noise.schallKonzeptFortePiano(df_wea,df_io,fileName)
+    IrrelevanzZusatzbelstung = 6
+    EinwirkbereichEinzelbeitrag = 12
+    zulaessigeUeberschreitungBeiVB = 1
+    # Einfaches Schallkonzept - die Lauteste WEA wird reduziert
+    df_io, df_wea = noise.schallKonzeptFortePiano(df_wea,df_io,fileName,
+                                 IrrelevanzZusatzbelstung=IrrelevanzZusatzbelstung,
+                                 EinwirkbereichEinzelbeitrag=EinwirkbereichEinzelbeitrag,
+                                zulaessigeUeberschreitungBeiVB=zulaessigeUeberschreitungBeiVB)
     # Alle Varianten von +/-1Mode werden getestet. Die Variante mit der höchsten gesamt kW Leistung wird ausgewählt
-    df_wea = noise.ExtraRundeSchallModes(df_wea,df_io,fileName,outfile)
+    df_wea = noise.ExtraRundeSchallModes(df_wea,df_io,fileName,outfile,
+                                 IrrelevanzZusatzbelstung=IrrelevanzZusatzbelstung,
+                                 EinwirkbereichEinzelbeitrag=EinwirkbereichEinzelbeitrag,
+                                zulaessigeUeberschreitungBeiVB=zulaessigeUeberschreitungBeiVB)
     # Berechnung der Schallwerte mit Bewertung an den jeweiligen IOs mit einem Schallkonzept
-    df_io = noise.calcAndEvaluateNoise(df_wea,df_io,outfile)
+    df_io = noise.calcAndEvaluateNoise(df_wea,df_io,outfile,
+                                 IrrelevanzZusatzbelstung=IrrelevanzZusatzbelstung,
+                                 EinwirkbereichEinzelbeitrag=EinwirkbereichEinzelbeitrag,
+                                zulaessigeUeberschreitungBeiVB=zulaessigeUeberschreitungBeiVB)
 
 if __name__ == "__main__":
     main()
