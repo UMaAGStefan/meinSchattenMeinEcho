@@ -4,7 +4,7 @@ import geopandas
 import time
 import shadow
 import noise
-
+# Kommentar
 def main():
     # EINGABE der Eingangsdatei
     fileName = r"example\240322_EINGANG_meinSchattenMeinEcho_Example.xlsx"
@@ -21,7 +21,6 @@ def main():
                                      crs=crsInp)
     outfile = fileName.replace('.xlsx','_Outfile.xlsx')
     gdf_wea.to_excel(outfile,index=None,sheet_name='WEA Eingangsdaten')
-
     # # # # # # SHADOW # # # # # # #
     # df_sr = pd.read_excel(fileName, sheet_name='Schatten')
     # gdf_sr = geopandas.GeoDataFrame(df_sr.drop(columns=['Ost ', 'Nord ']),
