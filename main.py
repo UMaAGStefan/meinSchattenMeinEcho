@@ -22,11 +22,11 @@ def main():
     outfile = fileName.replace('.xlsx','_Outfile.xlsx')
     gdf_wea.to_excel(outfile,index=None,sheet_name='WEA Eingangsdaten')
     # # # # # # SHADOW # # # # # # #
-    # df_sr = pd.read_excel(fileName, sheet_name='Schatten')
-    # gdf_sr = geopandas.GeoDataFrame(df_sr.drop(columns=['Ost ', 'Nord ']),
-    #                                 geometry=geopandas.points_from_xy(df_sr['Ost '], df_sr['Nord ']),
-    #                                 crs=crsInp)
-    # gdf_srVB, gdf_srZB, gdf_srGB = shadow.shadowFlicker(gdf_wea,gdf_sr,outfile)
+    df_sr = pd.read_excel(fileName, sheet_name='Schatten')
+    gdf_sr = geopandas.GeoDataFrame(df_sr.drop(columns=['Ost ', 'Nord ']),
+                                    geometry=geopandas.points_from_xy(df_sr['Ost '], df_sr['Nord ']),
+                                    crs=crsInp)
+    gdf_srVB, gdf_srZB, gdf_srGB = shadow.shadowFlicker(gdf_wea,gdf_sr,outfile)
     # # # # # # NOISE # # # # # # #
     # Einlesen der Schall IOs
     df_io = pd.read_excel(fileName, sheet_name='Schall',
