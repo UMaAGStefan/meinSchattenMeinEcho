@@ -17,14 +17,12 @@ import os
 
 def shadowAssessement(gdf_wea, gdf_sr):
     '''
-
     :param gdf_wea: Geodataframe mit Informationen zu den WEA Standorten und WEA Typen
     :param gdf_sr: Geodataframe mit Informationen zu den Schattenrezeptoren
     :return: gdf_sr mit Informationen zur Beschattungsdauer
     '''
     start_time_all = time.time()
     siteName = 'Default'
-    # # "...\Normen Richtlinien\Schall\shadowRangeCalculation.pdf"
     gdf_sr['Schattenstunden/Jahr [h]'] = None
     gdf_sr['Schattenstunden/Jahr [h:m]'] = None
     gdf_sr['Schattentag/Jahr [d]'] = None
@@ -54,7 +52,7 @@ def shadowAssessement(gdf_wea, gdf_sr):
         # sun['datetime Berlin'] = pd.DataFrame(sun.index, index=sun.index)[0].dt.tz_localize('UTC').dt.tz_convert(
         #     'Europe/Berlin')
         sun.loc[:,sun.columns[sun.columns.str.startswith('shadow')]] = 0
-        #weaInd = gdf_wea.index[0]
+
         for weaInd in gdf_wea.index:
             # # # # Prüfung der Verschattung durch die Orographie
             # # # # könnte zusätzlich berücksichtigt werden, bei sehr bewegten Gelände
@@ -75,9 +73,8 @@ def shadowAssessement(gdf_wea, gdf_sr):
                                   (gdf_wea.loc[weaInd,'geometry'].y-gdf_sr.loc[srInd,'geometry'].y)))%360
             distanceToSr = gdf_wea.loc[weaInd,'geometry'].distance(gdf_sr.loc[srInd,'geometry'])
 
-            # # # Anpassung auf H.D. Freund?
+
             # H.D. Freund, Die Reichweite des Schattenwurfs von Windkraftanlagen 1999
-            # Bekomme ich irgendwo das Dokument dazu?
             # Anlage nur Berücksichtigen wenn diese im Beschattungsbereicht liegt
             if (distanceToSr < gdf_wea.loc[weaInd,'Beschattungsbereich']) & (distanceToSr<2500):
                 shadowRotorRadius=gdf_wea.loc[weaInd,'Rotor diameter']*0.5*1
@@ -188,7 +185,7 @@ def shadowFlicker(gdf_wea,gdf_sr,outfile):
     #siteName = 'Default'
     gdf_wea.loc[:,'Beschattungsbereich']=((5*sunDistance*gdf_wea.loc[:,'BladeWidthAvg']/1097780000)**2-gdf_wea.loc[:,'Hub height']**2)**(1/2)
 
-    gdf_sr.loc[:,:'geometry']
+
     # Gesamtbelastung
     gdf_srGB = shadowAssessement(gdf_wea[(gdf_wea['Object type'] == 'Neue WEA') | (gdf_wea['Object type'] == 'Existierende WEA')], gdf_sr.loc[:,:'geometry'])
 
