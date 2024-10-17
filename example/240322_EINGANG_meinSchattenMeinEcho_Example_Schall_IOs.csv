@@ -1,0 +1,10 @@
+﻿IRW;Description;Object type;System label;Object ID;Ost ;Nord ;Z;Object description;User label;Country;Type;Demand;Distance demand;Points in area;x;y;x;y;x;y......(Header may only fit for first line);;;
+40;Schall-Immissionsort: TA Lärm - Reines Wohngebiet (1);Schall-Immissionsort;16;NSA;487254;5884379;1,6;;IO01;DE;TA Lärm;Reines Wohngebiet;;;;;;;;;;;
+40;Schall-Immissionsort: TA Lärm - Allgemeines Wohngebiet (2);Schall-Immissionsort;17;NSA;488898;5884449;0,6;;IO02;DE;TA Lärm;Allgemeines Wohngebiet;;;;;;;;;;;
+45;Schall-Immissionsort: TA Lärm - Außenbereich (3);Schall-Immissionsort;18;NSA;489444;5885520;0,2;;IO03;DE;TA Lärm;Außenbereich;;;;;;;;;;;4
+45;Schall-Immissionsort: TA Lärm - Außenbereich (4);Schall-Immissionsort;19;NSA;488491;5886442;0,3;;IO04;DE;TA Lärm;Außenbereich;;;;;;;;;;;
+45;Schall-Immissionsort: TA Lärm - Außenbereich (5);Schall-Immissionsort;20;NSA;487703;5885485;4;;IO05;DE;TA Lärm;Außenbereich;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;
