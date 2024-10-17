@@ -1,10 +1,6 @@
 
 # meinSchattenMeinEcho
-Das Repository soll helfen Schall und Schattenberechnungen nach den LAI Hinweisen, sowie gemäß TA Lärm und ISO 9613-2 auszuführen und zu bewerten.
-
-
-## Beschreibung
-Neben der Berechnung und Bewertung, können auch möglich Schallkonzept erstellt und bewertet werden.
+Das Repository soll helfen Schall und Schattenberechnungen nach den LAI Hinweisen, sowie gemäß TA Lärm und ISO 9613-2 auszuführen und zu bewerten. Es können auch möglich Schallkonzept erstellt werden.
 
 ## Beschreibung
 ### Schattenwurf
